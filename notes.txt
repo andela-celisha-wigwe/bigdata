@@ -1,0 +1,29 @@
+ Scala: lazy evaluation
+$ sign is a short cut to refer to one colum
+
+udf - unified dataf rame
+
+
+number of links
+blacklisted keywords
+repetition of the comment in the whole dataset.
+
+
+
+- Resource for DL and ANN
+- http://neuralnetworksanddeeplearning.com/chap1.html
+
+
+
+
+
+
+
+
+
+// our own black list parameters
+// get a database of spam messages
+// get the words of all the messages
+// filter allt he words that have less that 3 letters,
+// get the first 100 sorted by the number of occurences.
+

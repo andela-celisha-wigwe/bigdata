@@ -1,0 +1,566 @@
+➜  bin ll
+total 184
+-rwxr-xr-x@ 1 elchroy  staff   1.1K 16 Dec 03:18 beeline
+-rw-r--r--@ 1 elchroy  staff   899B 16 Dec 03:18 beeline.cmd
+-rwxr-xr-x@ 1 elchroy  staff   1.9K 16 Dec 03:18 find-spark-home
+-rw-r--r--@ 1 elchroy  staff   1.9K 16 Dec 03:18 load-spark-env.cmd
+-rw-r--r--@ 1 elchroy  staff   2.1K 16 Dec 03:18 load-spark-env.sh
+-rwxr-xr-x@ 1 elchroy  staff   2.9K 16 Dec 03:18 pyspark
+-rw-r--r--@ 1 elchroy  staff   1.0K 16 Dec 03:18 pyspark.cmd
+-rw-r--r--@ 1 elchroy  staff   1.5K 16 Dec 03:18 pyspark2.cmd
+-rwxr-xr-x@ 1 elchroy  staff   1.0K 16 Dec 03:18 run-example
+-rw-r--r--@ 1 elchroy  staff   988B 16 Dec 03:18 run-example.cmd
+-rwxr-xr-x@ 1 elchroy  staff   3.0K 16 Dec 03:18 spark-class
+-rw-r--r--@ 1 elchroy  staff   1.0K 16 Dec 03:18 spark-class.cmd
+-rw-r--r--@ 1 elchroy  staff   2.2K 16 Dec 03:18 spark-class2.cmd
+-rwxr-xr-x@ 1 elchroy  staff   2.9K 16 Dec 03:18 spark-shell
+-rw-r--r--@ 1 elchroy  staff   1.0K 16 Dec 03:18 spark-shell.cmd
+-rw-r--r--@ 1 elchroy  staff   1.5K 16 Dec 03:18 spark-shell2.cmd
+-rwxr-xr-x@ 1 elchroy  staff   1.0K 16 Dec 03:18 spark-sql
+-rwxr-xr-x@ 1 elchroy  staff   1.0K 16 Dec 03:18 spark-submit
+-rw-r--r--@ 1 elchroy  staff   1.0K 16 Dec 03:18 spark-submit.cmd
+-rw-r--r--@ 1 elchroy  staff   1.1K 16 Dec 03:18 spark-submit2.cmd
+-rwxr-xr-x@ 1 elchroy  staff   1.0K 16 Dec 03:18 sparkR
+-rw-r--r--@ 1 elchroy  staff   1.0K 16 Dec 03:18 sparkR.cmd
+-rw-r--r--@ 1 elchroy  staff   1.0K 16 Dec 03:18 sparkR2.cmd
+➜  bin ./spark-shell
+Using Spark's default log4j profile: org/apache/spark/log4j-defaults.properties
+Setting default log level to "WARN".
+To adjust logging level use sc.setLogLevel(newLevel). For SparkR, use setLogLevel(newLevel).
+17/04/19 11:14:00 WARN NativeCodeLoader: Unable to load native-hadoop library for your platform... using builtin-java classes where applicable
+17/04/19 11:14:23 WARN ObjectStore: Version information not found in metastore. hive.metastore.schema.verification is not enabled so recording the schema version 1.2.0
+17/04/19 11:14:23 WARN ObjectStore: Failed to get database default, returning NoSuchObjectException
+17/04/19 11:14:25 WARN ObjectStore: Failed to get database global_temp, returning NoSuchObjectException
+Spark context Web UI available at http://172.16.22.23:4040
+Spark context available as 'sc' (master = local[*], app id = local-1492596844722).
+Spark session available as 'spark'.
+Welcome to
+      ____              __
+     / __/__  ___ _____/ /__
+    _\ \/ _ \/ _ `/ __/  '_/
+   /___/ .__/\_,_/_/ /_/\_\   version 2.1.0
+      /_/
+
+Using Scala version 2.11.8 (Java HotSpot(TM) 64-Bit Server VM, Java 1.8.0_101)
+Type in expressions to have them evaluated.
+Type :help for more information.
+
+scala> import org.apache.spark.sql.SparkSession
+import org.apache.spark.sql.SparkSession
+
+scala> val spark = SparkSession.builder().getOrCreate()
+spark: org.apache.spark.sql.SparkSession = org.apache.spark.sql.SparkSession@12925d2
+
+scala> val df = spark.read.json("/Users/elchroy/Roy/Code/bigdata/spiders/results.json")
+df: org.apache.spark.sql.DataFrame = [_corrupt_record: string, author: string ... 2 more fields]
+
+scala> df.show(10)
++---------------+---------------+--------------------+--------------------+
+|_corrupt_record|         author|     comment_content|      published_date|
++---------------+---------------+--------------------+--------------------+
+|              [|           null|                null|                null|
+|           null|nerq9dcxy60aiem|='Brand New News ...|2005-08-12T04:18:...|
+|           null|zrkc6xwrr48nuyg|St0ck For Your Re...|2005-08-17T09:43:...|
+|           null|  hot doorknobs|              yikes.|2004-05-15T19:34:...|
+|           null|          Billy|Glad to see you'v...|2004-08-11T10:01:...|
+|           null|      Anonymous|It&amp;#39;s real...|2013-06-15T17:26:...|
+|           null|      Anonymous|Really when someo...|2013-06-08T03:43:...|
+|           null|      Anonymous|sir, satisfy deli...|2013-06-03T12:30:...|
+|           null|      Anonymous|I have been brows...|2013-06-01T10:46:...|
+|           null|      Anonymous|My computer syste...|2013-05-28T18:14:...|
++---------------+---------------+--------------------+--------------------+
+only showing top 10 rows
+
+
+scala> df.filter($"comment_content".contains("viagra"))
+res1: org.apache.spark.sql.Dataset[org.apache.spark.sql.Row] = [_corrupt_record: string, author: string ... 2 more fields]
+
+scala> df.filter($"comment_content".contains("viagra")).show(10)
++---------------+-------------+--------------------+--------------------+
+|_corrupt_record|       author|     comment_content|      published_date|
++---------------+-------------+--------------------+--------------------+
+|           null|    Anonymous|Concur Our Risqu‚...|2010-02-06T07:27:...|
+|           null|    Anonymous|&lt;a href="http:...|2009-10-26T22:43:...|
+|           null|    Anonymous|Concur Our Crestf...|2010-02-05T09:41:...|
+|           null|      zercath|I don’t know If I...|2010-03-24T19:54:...|
+|           null|       jacket|http://www.djmal....|2010-07-12T04:25:...|
+|           null|    Anonymous|http://forum.webh...|2009-12-23T14:58:...|
+|           null|    Anonymous|Takings Our Drubb...|2010-03-07T01:21:...|
+|           null|    Anonymous|Dans cela quelque...|2010-01-12T18:15:...|
+|           null|    Anonymous|&lt;a href="http:...|2013-01-11T11:05:...|
+|           null|Karen Hassett|&lt;a href="http:...|2009-11-29T10:09:...|
++---------------+-------------+--------------------+--------------------+
+only showing top 10 rows
+
+
+scala> df.filter($"comment_content".contains("viagra")).count()
+17/04/19 11:26:53 WARN JacksonParser: Found at least one malformed records (sample: [). The JSON reader will replace
+all malformed records with placeholder null in current PERMISSIVE parser mode.
+To find out which corrupted records have been replaced with null, please use the
+default inferred schema instead of providing a custom schema.
+
+Code example to print all malformed records (scala):
+===================================================
+// The corrupted record exists in column _corrupt_record.
+val parsedJson = spark.read.json("/path/to/json/file/test.json")
+
+
+res3: Long = 1258
+
+scala> df.select("author", "comment_content").filter("http".r.findAllIn($"comment_content").toList().length >= 2)
+<console>:29: error: type mismatch;
+ found   : org.apache.spark.sql.ColumnName
+ required: CharSequence
+       df.select("author", "comment_content").filter("http".r.findAllIn($"comment_content").toList().length >= 2)
+                                                                        ^
+
+scala> df.select("author", "comment_content").filter("http".r.findAllIn($"comment_content").toList().length >= 2)
+<console>:29: error: type mismatch;
+ found   : org.apache.spark.sql.ColumnName
+ required: CharSequence
+       df.select("author", "comment_content").filter("http".r.findAllIn($"comment_content").toList().length >= 2)
+                                                                        ^
+
+scala> df.select("author", "comment_content").withColumn("num_of_links", $"comment_content".matches("http")).show(10)
+<console>:29: error: value matches is not a member of org.apache.spark.sql.ColumnName
+       df.select("author", "comment_content").withColumn("num_of_links", $"comment_content".matches("http")).show(10)
+                                                                                            ^
+
+scala> df.select("author", "comment_content").withColumn("num_of_links", $"comment_content".matche("http")).show(10)
+<console>:29: error: value matche is not a member of org.apache.spark.sql.ColumnName
+       df.select("author", "comment_content").withColumn("num_of_links", $"comment_content".matche("http")).show(10)
+                                                                                            ^
+
+scala> df.select("author", "comment_content").withColumn("num_of_links", $"comment_content".match("http")).show(10)
+<console>:1: error: identifier expected but 'match' found.
+df.select("author", "comment_content").withColumn("num_of_links", $"comment_content".match("http")).show(10)
+                                                                                     ^
+<console>:1: error: '{' expected but '(' found.
+df.select("author", "comment_content").withColumn("num_of_links", $"comment_content".match("http")).show(10)
+                                                                                          ^
+
+scala> df.select("author", "comment_content").withColumn("num_of_links", $"comment_content".match{"http"}).show(10)
+<console>:1: error: identifier expected but 'match' found.
+df.select("author", "comment_content").withColumn("num_of_links", $"comment_content".match{"http"}).show(10)
+                                                                                     ^
+<console>:1: error: 'case' expected but string literal found.
+df.select("author", "comment_content").withColumn("num_of_links", $"comment_content".match{"http"}).show(10)
+                                                                                           ^
+
+scala> df.select("author", "comment_content").withColumn("num_of_links", $"comment_content".contains("http")).show(10)
+17/04/19 11:42:28 WARN JacksonParser: Found at least one malformed records (sample: [). The JSON reader will replace
+all malformed records with placeholder null in current PERMISSIVE parser mode.
+To find out which corrupted records have been replaced with null, please use the
+default inferred schema instead of providing a custom schema.
+
+Code example to print all malformed records (scala):
+===================================================
+// The corrupted record exists in column _corrupt_record.
+val parsedJson = spark.read.json("/path/to/json/file/test.json")
+
+
++---------------+--------------------+------------+
+|         author|     comment_content|num_of_links|
++---------------+--------------------+------------+
+|           null|                null|        null|
+|nerq9dcxy60aiem|='Brand New News ...|       false|
+|zrkc6xwrr48nuyg|St0ck For Your Re...|       false|
+|  hot doorknobs|              yikes.|       false|
+|          Billy|Glad to see you'v...|       false|
+|      Anonymous|It&amp;#39;s real...|        true|
+|      Anonymous|Really when someo...|        true|
+|      Anonymous|sir, satisfy deli...|        true|
+|      Anonymous|I have been brows...|        true|
+|      Anonymous|My computer syste...|        true|
++---------------+--------------------+------------+
+only showing top 10 rows
+
+
+scala> df.select("author", "comment_content").withColumn("num_of_links", $"comment_content".map("http")).show(10)
+<console>:29: error: overloaded method value map with alternatives:
+  (mapType: org.apache.spark.sql.types.MapType)org.apache.spark.sql.types.StructField <and>
+  (keyType: org.apache.spark.sql.types.DataType,valueType: org.apache.spark.sql.types.DataType)org.apache.spark.sql.types.StructField
+ cannot be applied to (String)
+       df.select("author", "comment_content").withColumn("num_of_links", $"comment_content".map("http")).show(10)
+                                                                                            ^
+
+scala> df.select("author", "comment_content").withColumn("num_of_links", $"comment_content".rlike("http")).show(10)
+17/04/19 11:44:44 WARN JacksonParser: Found at least one malformed records (sample: [). The JSON reader will replace
+all malformed records with placeholder null in current PERMISSIVE parser mode.
+To find out which corrupted records have been replaced with null, please use the
+default inferred schema instead of providing a custom schema.
+
+Code example to print all malformed records (scala):
+===================================================
+// The corrupted record exists in column _corrupt_record.
+val parsedJson = spark.read.json("/path/to/json/file/test.json")
+
+
++---------------+--------------------+------------+
+|         author|     comment_content|num_of_links|
++---------------+--------------------+------------+
+|           null|                null|        null|
+|nerq9dcxy60aiem|='Brand New News ...|       false|
+|zrkc6xwrr48nuyg|St0ck For Your Re...|       false|
+|  hot doorknobs|              yikes.|       false|
+|          Billy|Glad to see you'v...|       false|
+|      Anonymous|It&amp;#39;s real...|        true|
+|      Anonymous|Really when someo...|        true|
+|      Anonymous|sir, satisfy deli...|        true|
+|      Anonymous|I have been brows...|        true|
+|      Anonymous|My computer syste...|        true|
++---------------+--------------------+------------+
+only showing top 10 rows
+
+
+scala> df.select("author", "comment_content").withColumn("num_of_links", $"comment_content".drop("http")).show(10)
+<console>:29: error: value drop is not a member of org.apache.spark.sql.ColumnName
+       df.select("author", "comment_content").withColumn("num_of_links", $"comment_content".drop("http")).show(10)
+                                                                                            ^
+
+scala> df.select("author", "comment_content").withColumn("num_of_links", $"comment_content".drop("http")).show(10)
+<console>:29: error: value drop is not a member of org.apache.spark.sql.ColumnName
+       df.select("author", "comment_content").withColumn("num_of_links", $"comment_content".drop("http")).show(10)
+                                                                                            ^
+
+scala> val countHttp = udf[Int, String](content:String => "http".r.findAllIn(content).toList.length)
+<console>:1: error: identifier expected but string literal found.
+val countHttp = udf[Int, String](content:String => "http".r.findAllIn(content).toList.length)
+                                                   ^
+
+scala> val countHttp = udf[Int, String]((content:String) => "http".r.findAllIn(content).toList.length)
+countHttp: org.apache.spark.sql.expressions.UserDefinedFunction = UserDefinedFunction(<function1>,IntegerType,Some(List(StringType)))
+
+scala> df.select("author", "comment_content").withColumn("num_of_links", countHttp($"comment_content")).show(10)
+17/04/19 11:56:39 WARN JacksonParser: Found at least one malformed records (sample: [). The JSON reader will replace
+all malformed records with placeholder null in current PERMISSIVE parser mode.
+To find out which corrupted records have been replaced with null, please use the
+default inferred schema instead of providing a custom schema.
+
+Code example to print all malformed records (scala):
+===================================================
+// The corrupted record exists in column _corrupt_record.
+val parsedJson = spark.read.json("/path/to/json/file/test.json")
+
+
+17/04/19 11:56:39 ERROR Executor: Exception in task 0.0 in stage 7.0 (TID 37)
+org.apache.spark.SparkException: Failed to execute user defined function($anonfun$1: (string) => int)
+	at org.apache.spark.sql.catalyst.expressions.GeneratedClass$GeneratedIterator.processNext(Unknown Source)
+	at org.apache.spark.sql.execution.BufferedRowIterator.hasNext(BufferedRowIterator.java:43)
+	at org.apache.spark.sql.execution.WholeStageCodegenExec$$anonfun$8$$anon$1.hasNext(WholeStageCodegenExec.scala:377)
+	at org.apache.spark.sql.execution.SparkPlan$$anonfun$2.apply(SparkPlan.scala:231)
+	at org.apache.spark.sql.execution.SparkPlan$$anonfun$2.apply(SparkPlan.scala:225)
+	at org.apache.spark.rdd.RDD$$anonfun$mapPartitionsInternal$1$$anonfun$apply$25.apply(RDD.scala:826)
+	at org.apache.spark.rdd.RDD$$anonfun$mapPartitionsInternal$1$$anonfun$apply$25.apply(RDD.scala:826)
+	at org.apache.spark.rdd.MapPartitionsRDD.compute(MapPartitionsRDD.scala:38)
+	at org.apache.spark.rdd.RDD.computeOrReadCheckpoint(RDD.scala:323)
+	at org.apache.spark.rdd.RDD.iterator(RDD.scala:287)
+	at org.apache.spark.scheduler.ResultTask.runTask(ResultTask.scala:87)
+	at org.apache.spark.scheduler.Task.run(Task.scala:99)
+	at org.apache.spark.executor.Executor$TaskRunner.run(Executor.scala:282)
+	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1142)
+	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:617)
+	at java.lang.Thread.run(Thread.java:745)
+Caused by: java.lang.NullPointerException
+	at java.util.regex.Matcher.getTextLength(Matcher.java:1283)
+	at java.util.regex.Matcher.reset(Matcher.java:309)
+	at java.util.regex.Matcher.<init>(Matcher.java:229)
+	at java.util.regex.Pattern.matcher(Pattern.java:1093)
+	at scala.util.matching.Regex$MatchIterator.<init>(Regex.scala:742)
+	at scala.util.matching.Regex.findAllIn(Regex.scala:360)
+	at $line31.$read$$iw$$iw$$iw$$iw$$iw$$iw$$iw$$iw$$anonfun$1.apply(<console>:24)
+	at $line31.$read$$iw$$iw$$iw$$iw$$iw$$iw$$iw$$iw$$anonfun$1.apply(<console>:24)
+	... 16 more
+17/04/19 11:56:39 WARN TaskSetManager: Lost task 0.0 in stage 7.0 (TID 37, localhost, executor driver): org.apache.spark.SparkException: Failed to execute user defined function($anonfun$1: (string) => int)
+	at org.apache.spark.sql.catalyst.expressions.GeneratedClass$GeneratedIterator.processNext(Unknown Source)
+	at org.apache.spark.sql.execution.BufferedRowIterator.hasNext(BufferedRowIterator.java:43)
+	at org.apache.spark.sql.execution.WholeStageCodegenExec$$anonfun$8$$anon$1.hasNext(WholeStageCodegenExec.scala:377)
+	at org.apache.spark.sql.execution.SparkPlan$$anonfun$2.apply(SparkPlan.scala:231)
+	at org.apache.spark.sql.execution.SparkPlan$$anonfun$2.apply(SparkPlan.scala:225)
+	at org.apache.spark.rdd.RDD$$anonfun$mapPartitionsInternal$1$$anonfun$apply$25.apply(RDD.scala:826)
+	at org.apache.spark.rdd.RDD$$anonfun$mapPartitionsInternal$1$$anonfun$apply$25.apply(RDD.scala:826)
+	at org.apache.spark.rdd.MapPartitionsRDD.compute(MapPartitionsRDD.scala:38)
+	at org.apache.spark.rdd.RDD.computeOrReadCheckpoint(RDD.scala:323)
+	at org.apache.spark.rdd.RDD.iterator(RDD.scala:287)
+	at org.apache.spark.scheduler.ResultTask.runTask(ResultTask.scala:87)
+	at org.apache.spark.scheduler.Task.run(Task.scala:99)
+	at org.apache.spark.executor.Executor$TaskRunner.run(Executor.scala:282)
+	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1142)
+	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:617)
+	at java.lang.Thread.run(Thread.java:745)
+Caused by: java.lang.NullPointerException
+	at java.util.regex.Matcher.getTextLength(Matcher.java:1283)
+	at java.util.regex.Matcher.reset(Matcher.java:309)
+	at java.util.regex.Matcher.<init>(Matcher.java:229)
+	at java.util.regex.Pattern.matcher(Pattern.java:1093)
+	at scala.util.matching.Regex$MatchIterator.<init>(Regex.scala:742)
+	at scala.util.matching.Regex.findAllIn(Regex.scala:360)
+	at $line31.$read$$iw$$iw$$iw$$iw$$iw$$iw$$iw$$iw$$anonfun$1.apply(<console>:24)
+	at $line31.$read$$iw$$iw$$iw$$iw$$iw$$iw$$iw$$iw$$anonfun$1.apply(<console>:24)
+	... 16 more
+
+17/04/19 11:56:39 ERROR TaskSetManager: Task 0 in stage 7.0 failed 1 times; aborting job
+org.apache.spark.SparkException: Job aborted due to stage failure: Task 0 in stage 7.0 failed 1 times, most recent failure: Lost task 0.0 in stage 7.0 (TID 37, localhost, executor driver): org.apache.spark.SparkException: Failed to execute user defined function($anonfun$1: (string) => int)
+	at org.apache.spark.sql.catalyst.expressions.GeneratedClass$GeneratedIterator.processNext(Unknown Source)
+	at org.apache.spark.sql.execution.BufferedRowIterator.hasNext(BufferedRowIterator.java:43)
+	at org.apache.spark.sql.execution.WholeStageCodegenExec$$anonfun$8$$anon$1.hasNext(WholeStageCodegenExec.scala:377)
+	at org.apache.spark.sql.execution.SparkPlan$$anonfun$2.apply(SparkPlan.scala:231)
+	at org.apache.spark.sql.execution.SparkPlan$$anonfun$2.apply(SparkPlan.scala:225)
+	at org.apache.spark.rdd.RDD$$anonfun$mapPartitionsInternal$1$$anonfun$apply$25.apply(RDD.scala:826)
+	at org.apache.spark.rdd.RDD$$anonfun$mapPartitionsInternal$1$$anonfun$apply$25.apply(RDD.scala:826)
+	at org.apache.spark.rdd.MapPartitionsRDD.compute(MapPartitionsRDD.scala:38)
+	at org.apache.spark.rdd.RDD.computeOrReadCheckpoint(RDD.scala:323)
+	at org.apache.spark.rdd.RDD.iterator(RDD.scala:287)
+	at org.apache.spark.scheduler.ResultTask.runTask(ResultTask.scala:87)
+	at org.apache.spark.scheduler.Task.run(Task.scala:99)
+	at org.apache.spark.executor.Executor$TaskRunner.run(Executor.scala:282)
+	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1142)
+	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:617)
+	at java.lang.Thread.run(Thread.java:745)
+Caused by: java.lang.NullPointerException
+	at java.util.regex.Matcher.getTextLength(Matcher.java:1283)
+	at java.util.regex.Matcher.reset(Matcher.java:309)
+	at java.util.regex.Matcher.<init>(Matcher.java:229)
+	at java.util.regex.Pattern.matcher(Pattern.java:1093)
+	at scala.util.matching.Regex$MatchIterator.<init>(Regex.scala:742)
+	at scala.util.matching.Regex.findAllIn(Regex.scala:360)
+	at $anonfun$1.apply(<console>:24)
+	at $anonfun$1.apply(<console>:24)
+	... 16 more
+
+Driver stacktrace:
+  at org.apache.spark.scheduler.DAGScheduler.org$apache$spark$scheduler$DAGScheduler$$failJobAndIndependentStages(DAGScheduler.scala:1435)
+  at org.apache.spark.scheduler.DAGScheduler$$anonfun$abortStage$1.apply(DAGScheduler.scala:1423)
+  at org.apache.spark.scheduler.DAGScheduler$$anonfun$abortStage$1.apply(DAGScheduler.scala:1422)
+  at scala.collection.mutable.ResizableArray$class.foreach(ResizableArray.scala:59)
+  at scala.collection.mutable.ArrayBuffer.foreach(ArrayBuffer.scala:48)
+  at org.apache.spark.scheduler.DAGScheduler.abortStage(DAGScheduler.scala:1422)
+  at org.apache.spark.scheduler.DAGScheduler$$anonfun$handleTaskSetFailed$1.apply(DAGScheduler.scala:802)
+  at org.apache.spark.scheduler.DAGScheduler$$anonfun$handleTaskSetFailed$1.apply(DAGScheduler.scala:802)
+  at scala.Option.foreach(Option.scala:257)
+  at org.apache.spark.scheduler.DAGScheduler.handleTaskSetFailed(DAGScheduler.scala:802)
+  at org.apache.spark.scheduler.DAGSchedulerEventProcessLoop.doOnReceive(DAGScheduler.scala:1650)
+  at org.apache.spark.scheduler.DAGSchedulerEventProcessLoop.onReceive(DAGScheduler.scala:1605)
+  at org.apache.spark.scheduler.DAGSchedulerEventProcessLoop.onReceive(DAGScheduler.scala:1594)
+  at org.apache.spark.util.EventLoop$$anon$1.run(EventLoop.scala:48)
+  at org.apache.spark.scheduler.DAGScheduler.runJob(DAGScheduler.scala:628)
+  at org.apache.spark.SparkContext.runJob(SparkContext.scala:1918)
+  at org.apache.spark.SparkContext.runJob(SparkContext.scala:1931)
+  at org.apache.spark.SparkContext.runJob(SparkContext.scala:1944)
+  at org.apache.spark.sql.execution.SparkPlan.executeTake(SparkPlan.scala:333)
+  at org.apache.spark.sql.execution.CollectLimitExec.executeCollect(limit.scala:38)
+  at org.apache.spark.sql.Dataset$$anonfun$org$apache$spark$sql$Dataset$$execute$1$1.apply(Dataset.scala:2371)
+  at org.apache.spark.sql.execution.SQLExecution$.withNewExecutionId(SQLExecution.scala:57)
+  at org.apache.spark.sql.Dataset.withNewExecutionId(Dataset.scala:2765)
+  at org.apache.spark.sql.Dataset.org$apache$spark$sql$Dataset$$execute$1(Dataset.scala:2370)
+  at org.apache.spark.sql.Dataset.org$apache$spark$sql$Dataset$$collect(Dataset.scala:2377)
+  at org.apache.spark.sql.Dataset$$anonfun$head$1.apply(Dataset.scala:2113)
+  at org.apache.spark.sql.Dataset$$anonfun$head$1.apply(Dataset.scala:2112)
+  at org.apache.spark.sql.Dataset.withTypedCallback(Dataset.scala:2795)
+  at org.apache.spark.sql.Dataset.head(Dataset.scala:2112)
+  at org.apache.spark.sql.Dataset.take(Dataset.scala:2327)
+  at org.apache.spark.sql.Dataset.showString(Dataset.scala:248)
+  at org.apache.spark.sql.Dataset.show(Dataset.scala:636)
+  at org.apache.spark.sql.Dataset.show(Dataset.scala:595)
+  ... 48 elided
+Caused by: org.apache.spark.SparkException: Failed to execute user defined function($anonfun$1: (string) => int)
+  at org.apache.spark.sql.catalyst.expressions.GeneratedClass$GeneratedIterator.processNext(Unknown Source)
+  at org.apache.spark.sql.execution.BufferedRowIterator.hasNext(BufferedRowIterator.java:43)
+  at org.apache.spark.sql.execution.WholeStageCodegenExec$$anonfun$8$$anon$1.hasNext(WholeStageCodegenExec.scala:377)
+  at org.apache.spark.sql.execution.SparkPlan$$anonfun$2.apply(SparkPlan.scala:231)
+  at org.apache.spark.sql.execution.SparkPlan$$anonfun$2.apply(SparkPlan.scala:225)
+  at org.apache.spark.rdd.RDD$$anonfun$mapPartitionsInternal$1$$anonfun$apply$25.apply(RDD.scala:826)
+  at org.apache.spark.rdd.RDD$$anonfun$mapPartitionsInternal$1$$anonfun$apply$25.apply(RDD.scala:826)
+  at org.apache.spark.rdd.MapPartitionsRDD.compute(MapPartitionsRDD.scala:38)
+  at org.apache.spark.rdd.RDD.computeOrReadCheckpoint(RDD.scala:323)
+  at org.apache.spark.rdd.RDD.iterator(RDD.scala:287)
+  at org.apache.spark.scheduler.ResultTask.runTask(ResultTask.scala:87)
+  at org.apache.spark.scheduler.Task.run(Task.scala:99)
+  at org.apache.spark.executor.Executor$TaskRunner.run(Executor.scala:282)
+  at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1142)
+  at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:617)
+  at java.lang.Thread.run(Thread.java:745)
+Caused by: java.lang.NullPointerException
+  at java.util.regex.Matcher.getTextLength(Matcher.java:1283)
+  at java.util.regex.Matcher.reset(Matcher.java:309)
+  at java.util.regex.Matcher.<init>(Matcher.java:229)
+  at java.util.regex.Pattern.matcher(Pattern.java:1093)
+  at scala.util.matching.Regex$MatchIterator.<init>(Regex.scala:742)
+  at scala.util.matching.Regex.findAllIn(Regex.scala:360)
+  at $anonfun$1.apply(<console>:24)
+  at $anonfun$1.apply(<console>:24)
+  ... 16 more
+
+scala> df.show(10)
++---------------+---------------+--------------------+--------------------+
+|_corrupt_record|         author|     comment_content|      published_date|
++---------------+---------------+--------------------+--------------------+
+|              [|           null|                null|                null|
+|           null|nerq9dcxy60aiem|='Brand New News ...|2005-08-12T04:18:...|
+|           null|zrkc6xwrr48nuyg|St0ck For Your Re...|2005-08-17T09:43:...|
+|           null|  hot doorknobs|              yikes.|2004-05-15T19:34:...|
+|           null|          Billy|Glad to see you'v...|2004-08-11T10:01:...|
+|           null|      Anonymous|It&amp;#39;s real...|2013-06-15T17:26:...|
+|           null|      Anonymous|Really when someo...|2013-06-08T03:43:...|
+|           null|      Anonymous|sir, satisfy deli...|2013-06-03T12:30:...|
+|           null|      Anonymous|I have been brows...|2013-06-01T10:46:...|
+|           null|      Anonymous|My computer syste...|2013-05-28T18:14:...|
++---------------+---------------+--------------------+--------------------+
+only showing top 10 rows
+
+
+scala> df.filter($"comment_content" !== null).select("author", "comment_content").withColumn("num_of_links", countHttp($"comment_content")).show(10)
+warning: there was one deprecation warning; re-run with -deprecation for details
+17/04/19 11:58:28 WARN JacksonParser: Found at least one malformed records (sample: [). The JSON reader will replace
+all malformed records with placeholder null in current PERMISSIVE parser mode.
+To find out which corrupted records have been replaced with null, please use the
+default inferred schema instead of providing a custom schema.
+
+Code example to print all malformed records (scala):
+===================================================
+// The corrupted record exists in column _corrupt_record.
+val parsedJson = spark.read.json("/path/to/json/file/test.json")
+
+
++------+---------------+------------+
+|author|comment_content|num_of_links|
++------+---------------+------------+
++------+---------------+------------+
+
+
+scala> df.filter($"comment_content" !== null).show(10)
+warning: there was one deprecation warning; re-run with -deprecation for details
++---------------+------+---------------+--------------+
+|_corrupt_record|author|comment_content|published_date|
++---------------+------+---------------+--------------+
++---------------+------+---------------+--------------+
+
+
+scala> df.filter("comment_content is not null").show(10)
++---------------+---------------+--------------------+--------------------+
+|_corrupt_record|         author|     comment_content|      published_date|
++---------------+---------------+--------------------+--------------------+
+|           null|nerq9dcxy60aiem|='Brand New News ...|2005-08-12T04:18:...|
+|           null|zrkc6xwrr48nuyg|St0ck For Your Re...|2005-08-17T09:43:...|
+|           null|  hot doorknobs|              yikes.|2004-05-15T19:34:...|
+|           null|          Billy|Glad to see you'v...|2004-08-11T10:01:...|
+|           null|      Anonymous|It&amp;#39;s real...|2013-06-15T17:26:...|
+|           null|      Anonymous|Really when someo...|2013-06-08T03:43:...|
+|           null|      Anonymous|sir, satisfy deli...|2013-06-03T12:30:...|
+|           null|      Anonymous|I have been brows...|2013-06-01T10:46:...|
+|           null|      Anonymous|My computer syste...|2013-05-28T18:14:...|
+|           null|      Anonymous|Hey there! I just...|2013-05-22T13:29:...|
++---------------+---------------+--------------------+--------------------+
+only showing top 10 rows
+
+
+scala> df.filter($"comment_content is not null").select("author", "comment_content").withColumn("num_of_links", countHttp($"comment_content")).show(10)
+org.apache.spark.sql.AnalysisException: cannot resolve '`comment_content is not null`' given input columns: [_corrupt_record, author, comment_content, published_date];;
+'Filter 'comment_content is not null
++- Relation[_corrupt_record#0,author#1,comment_content#2,published_date#3] json
+
+  at org.apache.spark.sql.catalyst.analysis.package$AnalysisErrorAt.failAnalysis(package.scala:42)
+  at org.apache.spark.sql.catalyst.analysis.CheckAnalysis$$anonfun$checkAnalysis$1$$anonfun$apply$2.applyOrElse(CheckAnalysis.scala:77)
+  at org.apache.spark.sql.catalyst.analysis.CheckAnalysis$$anonfun$checkAnalysis$1$$anonfun$apply$2.applyOrElse(CheckAnalysis.scala:74)
+  at org.apache.spark.sql.catalyst.trees.TreeNode$$anonfun$transformUp$1.apply(TreeNode.scala:310)
+  at org.apache.spark.sql.catalyst.trees.TreeNode$$anonfun$transformUp$1.apply(TreeNode.scala:310)
+  at org.apache.spark.sql.catalyst.trees.CurrentOrigin$.withOrigin(TreeNode.scala:70)
+  at org.apache.spark.sql.catalyst.trees.TreeNode.transformUp(TreeNode.scala:309)
+  at org.apache.spark.sql.catalyst.plans.QueryPlan.transformExpressionUp$1(QueryPlan.scala:282)
+  at org.apache.spark.sql.catalyst.plans.QueryPlan.org$apache$spark$sql$catalyst$plans$QueryPlan$$recursiveTransform$2(QueryPlan.scala:292)
+  at org.apache.spark.sql.catalyst.plans.QueryPlan$$anonfun$7.apply(QueryPlan.scala:301)
+  at org.apache.spark.sql.catalyst.trees.TreeNode.mapProductIterator(TreeNode.scala:188)
+  at org.apache.spark.sql.catalyst.plans.QueryPlan.transformExpressionsUp(QueryPlan.scala:301)
+  at org.apache.spark.sql.catalyst.analysis.CheckAnalysis$$anonfun$checkAnalysis$1.apply(CheckAnalysis.scala:74)
+  at org.apache.spark.sql.catalyst.analysis.CheckAnalysis$$anonfun$checkAnalysis$1.apply(CheckAnalysis.scala:67)
+  at org.apache.spark.sql.catalyst.trees.TreeNode.foreachUp(TreeNode.scala:128)
+  at org.apache.spark.sql.catalyst.analysis.CheckAnalysis$class.checkAnalysis(CheckAnalysis.scala:67)
+  at org.apache.spark.sql.catalyst.analysis.Analyzer.checkAnalysis(Analyzer.scala:57)
+  at org.apache.spark.sql.execution.QueryExecution.assertAnalyzed(QueryExecution.scala:48)
+  at org.apache.spark.sql.Dataset.<init>(Dataset.scala:161)
+  at org.apache.spark.sql.Dataset.<init>(Dataset.scala:167)
+  at org.apache.spark.sql.Dataset$.apply(Dataset.scala:58)
+  at org.apache.spark.sql.Dataset.withTypedPlan(Dataset.scala:2827)
+  at org.apache.spark.sql.Dataset.filter(Dataset.scala:1272)
+  ... 48 elided
+
+scala> df.filter("comment_content is not null").select("author", "comment_content").withColumn("num_of_links", countHttp($"comment_content")).show(10)
+17/04/19 12:01:24 WARN JacksonParser: Found at least one malformed records (sample: [). The JSON reader will replace
+all malformed records with placeholder null in current PERMISSIVE parser mode.
+To find out which corrupted records have been replaced with null, please use the
+default inferred schema instead of providing a custom schema.
+
+Code example to print all malformed records (scala):
+===================================================
+// The corrupted record exists in column _corrupt_record.
+val parsedJson = spark.read.json("/path/to/json/file/test.json")
+
+
++---------------+--------------------+------------+
+|         author|     comment_content|num_of_links|
++---------------+--------------------+------------+
+|nerq9dcxy60aiem|='Brand New News ...|           0|
+|zrkc6xwrr48nuyg|St0ck For Your Re...|           0|
+|  hot doorknobs|              yikes.|           0|
+|          Billy|Glad to see you'v...|           0|
+|      Anonymous|It&amp;#39;s real...|           1|
+|      Anonymous|Really when someo...|           1|
+|      Anonymous|sir, satisfy deli...|           1|
+|      Anonymous|I have been brows...|           1|
+|      Anonymous|My computer syste...|           1|
+|      Anonymous|Hey there! I just...|           1|
++---------------+--------------------+------------+
+only showing top 10 rows
+
+
+scala> df.show(10)
++---------------+---------------+--------------------+--------------------+
+|_corrupt_record|         author|     comment_content|      published_date|
++---------------+---------------+--------------------+--------------------+
+|              [|           null|                null|                null|
+|           null|nerq9dcxy60aiem|='Brand New News ...|2005-08-12T04:18:...|
+|           null|zrkc6xwrr48nuyg|St0ck For Your Re...|2005-08-17T09:43:...|
+|           null|  hot doorknobs|              yikes.|2004-05-15T19:34:...|
+|           null|          Billy|Glad to see you'v...|2004-08-11T10:01:...|
+|           null|      Anonymous|It&amp;#39;s real...|2013-06-15T17:26:...|
+|           null|      Anonymous|Really when someo...|2013-06-08T03:43:...|
+|           null|      Anonymous|sir, satisfy deli...|2013-06-03T12:30:...|
+|           null|      Anonymous|I have been brows...|2013-06-01T10:46:...|
+|           null|      Anonymous|My computer syste...|2013-05-28T18:14:...|
++---------------+---------------+--------------------+--------------------+
+only showing top 10 rows
+
+
+scala> val newDF = df.filter("comment_content is not null").select("author", "comment_content").withColumn("num_of_links", countHttp($"comment_content"))
+newDF: org.apache.spark.sql.DataFrame = [author: string, comment_content: string ... 1 more field]
+
+scala> newDF.filter($"num_of_links" > 2).show(10)
+17/04/19 12:03:20 WARN JacksonParser: Found at least one malformed records (sample: [). The JSON reader will replace
+all malformed records with placeholder null in current PERMISSIVE parser mode.
+To find out which corrupted records have been replaced with null, please use the
+default inferred schema instead of providing a custom schema.
+
+Code example to print all malformed records (scala):
+===================================================
+// The corrupted record exists in column _corrupt_record.
+val parsedJson = spark.read.json("/path/to/json/file/test.json")
+
+
++---------+--------------------+------------+
+|   author|     comment_content|num_of_links|
++---------+--------------------+------------+
+|Anonymous|ï»¿Ease and comfo...|           3|
+|Anonymous|&lt;a href="http:...|           3|
+|Anonymous|axotomarvex  &lt;...|           3|
+|Anonymous|&lt;a href="http:...|           3|
+|Anonymous|&lt;a href="http:...|           4|
+|Anonymous|&lt;a href="http:...|           4|
+|Anonymous|&lt;a href="http:...|           4|
+|   Quiggy|Evan, those numbe...|           4|
+|Anonymous|Concur Our Risqu‚...|           7|
+|Anonymous|GojWtq http://kur...|          16|
++---------+--------------------+------------+
+only showing top 10 rows
+
+
+scala>

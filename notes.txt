@@ -27,3 +27,58 @@ repetition of the comment in the whole dataset.
 // filter allt he words that have less that 3 letters,
 // get the first 100 sorted by the number of occurences.
 
+
+- add to the current one 
+- create a new column - boolean, that would be 1 for spam and 0 for not spam
+
+
+
+
+# Model representation
+
+- Output value (y)
+
+- count (x1)
+- blacklist_count (x2)
+- num_of_lists (x3)
+
+h(x1, x2, h3) = y = C0 + C1 * x1 + C2 * x2 + C3 * x3
+
+h is closer to y.
+
+## Cost function.
+
+J(h) = 1/2m * sum((y - h'(x1, x2, x3)) ^ 2)) # You can add the sqrt but it's not necessary in this case and will simplify calculus.
+
+m = the size of the dataset. ~400.000
+
+Minimise J function.
+
+## Gradient descent.
+
+Gradient descent is based on the slop of the function. It starts in a point (usually (0,0,0)) and moves in the 
+direction of the slop a little bit (based on an small number defined before called a). still it arrives to local
+minimum.
+
+Repeat until convergion
+  - Cj = Cj - a * d/(Cj * d) * J(C0, C1, C2, C3)
+
+Where: 
+- j is in [0, 4)
+- m is the size of the dataset.
+
+All the steps should be simultaneously. I.e.:
+
+temp0 = C0 - a * d/(C0 * d) * J(C0, C1, C2, C3)
+temp1 = C1 - a * d/(C1 * d) * J(C0, C1, C2, C3)
+temp2 = C2 - a * d/(C2 * d) * J(C0, C1, C2, C3)
+temp3 = C3 - a * d/(C3 * d) * J(C0, C1, C2, C3)
+C0 = temp0
+C1 = temp1
+C2 = temp2
+C3 = temp3
+
+Given a dataset with c0 .. c3, implekent a functino j(c0..c3, h)
+
+h'(x1, x2, x3) = C0 + C1 * x1 + C2 * x2 + C3 * x3
+J(C0, C1, C2, C3, h) = 1/2m * sum((y - h'(x1, x2, x3)) ^ 2))

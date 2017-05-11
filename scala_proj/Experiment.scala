@@ -1,6 +1,7 @@
 import org.apache.spark.sql.SQLContext
 import org.apache.spark.sql.Row
 import org.apache.spark.sql.functions.{count, lit, desc, sum}
+import org.apache.spark.sql.DataFrame
 
 val blacklist = List("viagra", "pharmacy", "buy", 
 	"email", "credit", "report", "free", "money",
@@ -33,7 +34,7 @@ val costFunction = udf[Double, DataFrame, Double, Double, Double, Double]((datas
 	val sumDf = dataset.agg(sum(hypError($"spam", hypothesis($"count", $"blacklist_count", $"num_of_links", lit(C0), lit(C1), lit(C2), lit(C3)))))
 	// sumDf will be a DataFrame of one row and one column.
 	// and we are getting the only element in that dataframe.
-	(1/(2*dataset.count())) * (sumDf.first.get(0))
+	(1/(2*dataset.count())) * (sumDf.first.getDouble(0))
 })
 
 
@@ -104,7 +105,8 @@ def sigma(numLinks: Double, count: Double, blacklistCount: Double) : Double = {
 val spamFactor = udf[Double, Double, Double, Double](sigma)
 val finalDF = normalizedDF.withColumn("spam_factor", spamFactor($"num_of_links", $"count", $"blacklist_count")).sort(desc("spam_factor"))
 val limit = finalDF.stat.approxQuantile("spam_factor", Array(0.98), 0).last
-val realFinalDF = finalDF.withColumn("spam", udf[Boolean, Double]((spam_factor: Double) => (spam_factor >= limit))($"spam_factor"))
+val realFinalUDF = udf[Boolean, Double]((spam_factor: Double) => (spam_factor >= limit))
+val realFinalDF = finalDF.withColumn("spam", realFinalUDF($"spam_factor")).cache()
 
 realFinalDF.show(20)
 
@@ -118,42 +120,63 @@ def costFunctionDerivative(dataset: DataFrame, C0: Double, C1: Double, C2: Doubl
 		case 3 => dataset("num_of_links")
 	}
 	val sumDf = dataset.agg(sum(x * hypError($"spam", hypothesis($"count", $"blacklist_count", $"num_of_links", lit(C0), lit(C1), lit(C2), lit(C3)))))
-	// Cj := Cj - a * 1/m * sum(1, m, i, (h(xi) - yi) * x{i, j})
-	(1/dataset.count()) * (sumDf.first.get(0))
-})
+	// Cj := Cj - a * 1.0/m * sum(1, m, i, (h(xi) - yi) * x{i, j})
+	(1.0/dataset.count()) * (sumDf.first.getDouble(0)) // take not of integer division. Int / Int = Int, 
+}
 
 def gradientDescent (dataset: DataFrame) : (Double, Double, Double, Double) = {
-	val alpha = 0.01 // this is the learning rate for the gradientDescent funciton.
+	val alpha = 0.03 // this is the learning rate for the gradientDescent funciton.
+	// to avoid overfitting, you can use a smaller value.
+	// but his can make the grddient descent to be very slow.
 
-	var C0 = 0
-	var C1 = 0
-	var C2 = 0
-	var C3 = 0
+	var C0 = 0.0
+	var C1 = 0.0
+	var C2 = 0.0
+	var C3 = 0.0
 
-	var prevC0 = -1
-	var prevC1 = -1
-	var prevC2 = -1
-	var prevC3 = -1
+	var prevC0 = -1.0
+	var prevC1 = -1.0
+	var prevC2 = -1.0
+	var prevC3 = -1.0
+
+	var temp0 = 0.0
+	var temp1 = 0.0
+	var temp2 = 0.0
+	var temp3 = 0.0
+
+	var count = 0;
+	var start = System.currentTimeMillis
 
 	while (C0 != prevC0 && C1 != prevC1 && C2 != prevC2 && C3 != prevC3) {
 		// store the paramters inside temporary values. This is very important in gradient descent.
-		var temp0 = C0 - (alpha * costFunctionDerivative(dataset, C0, C1, C2, C3, 0))
-		var temp1 = C1 - (alpha * costFunctionDerivative(dataset, C0, C1, C2, C3, 1))
-		var temp2 = C2 - (alpha * costFunctionDerivative(dataset, C0, C1, C2, C3, 2))
-		var temp3 = C3 - (alpha * costFunctionDerivative(dataset, C0, C1, C2, C3, 3))
+		temp0 = C0 - (alpha * costFunctionDerivative(dataset, C0, C1, C2, C3, 0))
+		temp1 = C1 - (alpha * costFunctionDerivative(dataset, C0, C1, C2, C3, 1))
+		temp2 = C2 - (alpha * costFunctionDerivative(dataset, C0, C1, C2, C3, 2))
+		temp3 = C3 - (alpha * costFunctionDerivative(dataset, C0, C1, C2, C3, 3))
+		// println("=========>")
+		// println(temp0, temp1, temp2, temp3, "debugging the temp variables")
 
 		// update the previous parameters with the values of C0...C3
 		prevC0 = C0
 		prevC1 = C1
 		prevC2 = C2
 		prevC3 = C3
+		// println("=========>")
+		// println(prevC0, prevC1, prevC2, prevC3, "debugging the prev variables")
 
 		// assign the new updated values to the c parameters.
-		C0 = tempC0
-		C1 = tempC1
-		C2 = tempC2
-		C3 = tempC3
+		C0 = temp0
+		C1 = temp1
+		C2 = temp2
+		C3 = temp3
+
+		// println("=========>")
+		println(C0, C1, C2, C3, count, "<========debugging the return values")
+		// println("Time spent ========> ", System.currentTimeMillis - start, "\n")
+		count += 1
 	}
+	var stop = System.currentTimeMillis
+	println("Total time =====> ", stop - start)
 	(C0, C1, C2, C3) // return a tuple with 4 Doubles
 }
 

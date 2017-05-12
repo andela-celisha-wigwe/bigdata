@@ -82,3 +82,10 @@ Given a dataset with c0 .. c3, implekent a functino j(c0..c3, h)
 
 h'(x1, x2, x3) = C0 + C1 * x1 + C2 * x2 + C3 * x3
 J(C0, C1, C2, C3, h) = 1/2m * sum((y - h'(x1, x2, x3)) ^ 2))
+
+
+
+
+Clustered - we know th epossible clusteres
+unclusters, we dont know the possible clusters, but we know just the similarities betwenn each one
+	- e.g recommendation, classifying news, 

@@ -95,48 +95,81 @@ val indexed = pipeline.fit(data).transform(data)
 
 // indexed.show()
 
-val corpus = (indexed
+val post_content_corpus = (indexed
 	.select("post_content_keywords")
 	.collect()
-	.map{row => row.getAs[Seq[String]](0)})
-println(corpus)
+	.map{row => row.getAs[Seq[String]](0)}
+)
+// println(post_content_corpus)
 
-// var unique_set = Set.empty[String]
-var unique_set = Map.empty[String, Double]
+// var unique_post_content_set = Set.empty[String]
+var unique_post_content_set = Map.empty[String, Double]
 
-corpus.foreach((document) => {
-	// document.toSeq.foreach(word => unique_set += word.toString())
-	document.toSeq.map(word => unique_set += (word -> 0))
+post_content_corpus.foreach((document) => {
+	// document.toSeq.foreach(word => unique_post_content_set += word.toString())
+	document.toSeq.map(word => unique_post_content_set += (word -> 0))
 })
 
-unique_set.toSeq.foreach((kv_pair) => {
+unique_post_content_set.toSeq.foreach((kv_pair) => {
 	val word = kv_pair._1
-	val df = corpus.filter(_.contains(word)).length
-	// unique_set = unique_set.set(word, log((corpus.length) / (df + 1)))
-	unique_set += (word -> log((corpus.length) / (df + 1))) // plus 1 => if df is 0, we'll get an error.
+	val df = post_content_corpus.filter(_.contains(word)).length
+	// unique_post_content_set = unique_post_content_set.set(word, log((post_content_corpus.length) / (df + 1)))
+	unique_post_content_set += (word -> log((post_content_corpus.length) / (df + 1))) // plus 1 => if df is 0, we'll get an error.
 })
 
-val tfidfVector = udf[Seq[Double], Seq[String]]((document: Seq[String]) => {
-	unique_set.map{ kv_pair => 
+val post_content_tfidfVector = udf[Seq[Double], Seq[String]]((document: Seq[String]) => {
+	unique_post_content_set.map{ kv_pair => 
 		val word = kv_pair._1
 		if (document.contains(word)) {
-			val idf = unique_set(word) // the document inverse-frequence int hen corpus
+			val idf = unique_post_content_set(word) // the document inverse-frequence int hen post_content_corpus
 			val tf = document.filter(_ == word).length // the number of occurences of the word in the document.
 			idf * tf
 		} else 0
 	}.toSeq
 })
 
-// println(unique_set)
 
-val getHashingTrick = udf[Seq[Int], Seq[String]]((document: Seq[String]) => {
-	// unique_set.toSeq.map{ word => if (document.contains(word)) 1 else 0}
-	unique_set.map{ kv_pair => if (document.contains(kv_pair._1)) 1 else 0}.toSeq
+val title_corpus = (indexed
+	.select("title_keywords")
+	.collect()
+	.map{row => row.getAs[Seq[String]](0)}
+)
+
+var unique_title_set = Map.empty[String, Double]
+
+title_corpus.foreach( document => {
+	document.toSeq.map(word => unique_title_set += (word -> 0))
 })
+
+unique_title_set.toSeq.foreach(kv_pair => {
+	val word = kv_pair._1
+	var df = title_corpus.filter(_.contains(word)).length
+	unique_title_set += (word -> log( (title_corpus.length) / (df + 1) ))
+})
+
+val title_tfidfVector = udf[Seq[Double], Seq[String]]( (document: Seq[String]) => {
+	unique_title_set.map{ kv_pair => 
+		val word = kv_pair._1
+		if(document.contains(word)){
+			var idf = unique_title_set(word)
+			var tf = document.filter(_ == word).length
+			idf * tf
+		} else 0
+	}.toSeq
+})
+
+
+// println(unique_post_content_set)
+
+// val getHashingTrick = udf[Seq[Int], Seq[String]]((document: Seq[String]) => {
+// 	// unique_post_content_set.toSeq.map{ word => if (document.contains(word)) 1 else 0}
+// 	unique_post_content_set.map{ kv_pair => if (document.contains(kv_pair._1)) 1 else 0}.toSeq
+// })
 
 val indexedWithHash = (indexed
 	// .withColumn("post_content_hash", getHashingTrick($"post_content_keywords"))
-	.withColumn("post_content_tfidf", tfidfVector($"post_content_keywords"))
+	.withColumn("post_content_tfidf", post_content_tfidfVector($"post_content_keywords"))
+	.withColumn("title_tfidf", title_tfidfVector($"title_keywords"))
 )
 
 

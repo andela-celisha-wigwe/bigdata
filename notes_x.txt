@@ -1,0 +1,142 @@
+# N-Gram
+
+Input:
+  - Phrase "Roy and Agustin have coding sessions"
+  - N (Integer).
+
+Output: 
+  - All the possible combinations of size N in the phrase. To be a valid combination,
+each word should be next to each other.
+
+    Example: "Roy and" <- Valid.
+             "Roy Agustin" <- Not valid.
+             
+"Roy and Agustin"
+"have coding sessions"
+
+Text recognition, text prediction and clustering. 
+
+THe input doesn't need to be text, necessarily. It can be audio and in that case,
+the tokens will be formed by phonems.
+
+# TF-IDF
+
+"Term frequency-inverse document frecuency." 
+
+Suppose that have a collection of documents (usually refered as corpus). And you want 
+a way to measure the important keywords in this text. Then you will go document by document
+doing the following:
+
+```
+brute frequency approach to calculate the term frequency,
+there are other methods.
+calculate_frequency_in_document(word, document):
+  "Calculates the term frequency of a word in document"
+  similar_words = [prev_word for prev_word in document if prev_word == word]
+  return len(similar_words)
+  
+calculate_frequency_in_corpus(word, corpus):
+  "Calculates the (inverse) frequency of a word in a set of documents"
+  D = len(corpus)
+  acc = 0
+  for d in corpus:
+    df = calculate_frequency_in_document(word, d)
+    acc += df
+  return log((D + 1) / (acc + 1))
+  # Because of the properties of a log, if a term appears in all the documents,
+  # then this operation will return 0.
+
+for document in corpus:
+  for word in document:
+    tf = calculate_frequency_in_document(word, document)
+    idf = calculate_frequency_in_corpus(word, corpus)
+    tf * idf
+```
+
+The fact that it returns 0 when the term is in all the documments it's relevant because
+we don't want to put emphasis in words that aren't meaninful. For example, we want to
+avoid giving more importance than necessary to words like "the", "a", "you."
+
+So you can identify relevant keywords in a topic by selecting the ones that have 
+the biggest frequency. With this keywords you can identify the documents in a topic.
+
+{
+  "milk": 0.3
+  "house": 0.1
+  "cow": 0.4
+}
+
+{
+  "milk": 0.3
+  "store": 0.1
+  "cow": 0.4
+}
+
+{
+  "monkey": 0.6
+  "darwin": 0.6
+  "island": 0.1
+}
+
+{
+  "monkey": 0.6
+  "darwin": 0.6
+}
+
+{
+  "monkey": 0.6
+  "darwin": 0.6
+}
+
+"milk", "monkey" and "darwin".
+
+"milk": [1, 2]
+"monkey": [3, 4, 5]
+"darwing": [3, 4, 5]
+
+"milk": [1, 2]
+["monkey", "darwin"]: [3, 4, 5]
+
+# Feature hashing (or the "hashing trick")
+
+Problem: 
+
+Usually in text manipulation algorithms we have as input a "bag of word" which means
+an array of tokens. However, most algorithms can only work with numerical features.
+
+"Roy and Agustin have coding sessions"
+"Row likes cinema sessions"
+"Agustin goes to the cinema"
+
+        | "Roy" "and "Agustin" "have" "coding" "sessions" "likes" "cinema" "goes" "to" "the" "Row"
+phrase 1|   1     1       1       1      1         1          0      0       0      0    0     0
+phrase 2|   0     0       0       0      0         1          1      1       0      0    0     1
+phrase 3|   0     0       1       0      0         0          0      1       1      1    1     0
+
+
+
+
+
+
+
+corpus = [
+  ['one', 'two', 'three'],
+  ['two', 'three', 'for', 'five']
+]
+
+# First, we create a new set
+set_of_words = set()
+for document in corpus:
+  for word in document:
+    set_of_words.add(word) # sets can't have duplicated values, so it will add only 
+    # if it isn't already in the set
+    
+output = []
+for document in courpus:
+  document_output = [1 if word in document else 0 for word in set_of_words]
+  ouput.append(document_output)
+  
+print set_of_words
+# ['one', 'two', 'three', 'four', 'five']
+print output
+# [[1, 1, 1, 0, 0], [0, 1, 1, 1, 1]]

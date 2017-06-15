@@ -178,7 +178,12 @@ val indexedWithHash = (indexed
 // HashingTF creates a new dataset and does not add a new column to the original dataset
 // val tf: RDD[Vector] = hashingTF.transform(indexed.select("post_content_keywords"))
 
-indexedWithHash.show(10)
+// indexedWithHash.show(10)
+
+val adder = udf[Double, Array[Double]]((array_double: Array[Double]) => array_double.sum)
+
+indexedWithHash.withColumn("sum_of_title", adder($"title_tfidf")).show(10)
+
 // tf.show(10)
 
 // create a global object.

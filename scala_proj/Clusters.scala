@@ -2,7 +2,7 @@ import org.apache.spark.mllib.feature.{HashingTF, IDF}
 import org.apache.spark.mllib.linalg.Vector
 import org.apache.spark.rdd.RDD
 
-import scala.math.log
+import scala.math.{log, sqrt}
 
 import org.apache.spark.sql.SQLContext
 import org.apache.spark.sql.Row
@@ -26,7 +26,7 @@ import java.net.URL
 
 val sqlContext = new SQLContext(sc)
 
-val dateToTS = unix_timestamp($"date_created", "yyyy-MM-dd'T'HH:mm:ss.SSSXXX")
+// val dateToTS = unix_timestamp($"date_created", "yyyy-MM-dd'T'HH:mm:ss.SSSXXX")
 val authorToLower = udf[String, String]((author: String) => { author.toLowerCase() })
 // yyyy-MM-dd'T'HH:mm:ss.SSSXXX
 
@@ -85,48 +85,48 @@ val title_ngrammer = (new NGram()
 val data  = (sqlContext.jsonFile("/Users/elchroy/Roy/Code/bigdata/spiders/data.json")
 	.filter("author is not null")
 	.drop($"_corrupt_record")
-	.withColumn("ts", dateToTS)
+	// .withColumn("ts", dateToTS)
 	.withColumn("author", lower($"author"))
 	.withColumn("my_author_index", getAuthorIndex($"author"))
-)
+).cache()
 
 val pipeline = new Pipeline().setStages(Array(authorIndexer, postURLIndexer, post_content_tokenizer, post_content_stop_words_remover, post_content_ngrammer, title_tokenizer, title_stop_words_remover, title_ngrammer))
-val indexed = pipeline.fit(data).transform(data)
+val indexed = pipeline.fit(data).transform(data).cache()
 
 // indexed.show()
 
-val post_content_corpus = (indexed
-	.select("post_content_keywords")
-	.collect()
-	.map{row => row.getAs[Seq[String]](0)}
-)
-// println(post_content_corpus)
+	// val post_content_corpus = (indexed
+	// 	.select("post_content_keywords")
+	// 	.collect()
+	// 	.map{row => row.getAs[Seq[String]](0)}
+	// )
+	// // println(post_content_corpus)
 
-// var unique_post_content_set = Set.empty[String]
-var unique_post_content_set = Map.empty[String, Double]
+	// // var unique_post_content_set = Set.empty[String]
+	// var unique_post_content_set = Map.empty[String, Double]
 
-post_content_corpus.foreach((document) => {
-	// document.toSeq.foreach(word => unique_post_content_set += word.toString())
-	document.toSeq.map(word => unique_post_content_set += (word -> 0))
-})
+	// post_content_corpus.foreach((document) => {
+	// 	// document.toSeq.foreach(word => unique_post_content_set += word.toString())
+	// 	document.toSeq.map(word => unique_post_content_set += (word -> 0))
+	// })
 
-unique_post_content_set.toSeq.foreach((kv_pair) => {
-	val word = kv_pair._1
-	val df = post_content_corpus.filter(_.contains(word)).length
-	// unique_post_content_set = unique_post_content_set.set(word, log((post_content_corpus.length) / (df + 1)))
-	unique_post_content_set += (word -> log((post_content_corpus.length) / (df + 1))) // plus 1 => if df is 0, we'll get an error.
-})
+	// unique_post_content_set.toSeq.foreach((kv_pair) => {
+	// 	val word = kv_pair._1
+	// 	val df = post_content_corpus.filter(_.contains(word)).length
+	// 	// unique_post_content_set = unique_post_content_set.set(word, log((post_content_corpus.length) / (df + 1)))
+	// 	unique_post_content_set += (word -> log((post_content_corpus.length) / (df + 1))) // plus 1 => if df is 0, we'll get an error.
+	// })
 
-val post_content_tfidfVector = udf[Seq[Double], Seq[String]]((document: Seq[String]) => {
-	unique_post_content_set.map{ kv_pair => 
-		val word = kv_pair._1
-		if (document.contains(word)) {
-			val idf = unique_post_content_set(word) // the document inverse-frequence int hen post_content_corpus
-			val tf = document.filter(_ == word).length // the number of occurences of the word in the document.
-			idf * tf
-		} else 0
-	}.toSeq
-})
+	// val post_content_tfidfVector = udf[Seq[Double], Seq[String]]((document: Seq[String]) => {
+	// 	unique_post_content_set.map{ kv_pair => 
+	// 		val word = kv_pair._1
+	// 		if (document.contains(word)) {
+	// 			val idf = unique_post_content_set(word) // the document inverse-frequence int hen post_content_corpus
+	// 			val tf = document.filter(_ == word).length // the number of occurences of the word in the document.
+	// 			idf * tf
+	// 		} else 0
+	// 	}.toSeq
+	// })
 
 
 val title_corpus = (indexed
@@ -159,6 +159,12 @@ val title_tfidfVector = udf[Seq[Double], Seq[String]]( (document: Seq[String]) =
 })
 
 
+
+val euclidean_norm = udf[Double, Seq[Double]]((tf_idf: Seq[Double]) => {
+	sqrt(tf_idf.map(v => v * v).sum)
+})
+
+
 // println(unique_post_content_set)
 
 // val getHashingTrick = udf[Seq[Int], Seq[String]]((document: Seq[String]) => {
@@ -168,9 +174,39 @@ val title_tfidfVector = udf[Seq[Double], Seq[String]]( (document: Seq[String]) =
 
 val indexedWithHash = (indexed
 	// .withColumn("post_content_hash", getHashingTrick($"post_content_keywords"))
-	.withColumn("post_content_tfidf", post_content_tfidfVector($"post_content_keywords"))
+	// .withColumn("post_content_tfidf", post_content_tfidfVector($"post_content_keywords"))
 	.withColumn("title_tfidf", title_tfidfVector($"title_keywords"))
-)
+	.withColumn("euclidean_norm", euclidean_norm($"title_tfidf"))
+).cache()
+
+val corpus_of_title_tfidf = indexedWithHash.select("title_tfidf").collect().map(row => row.getAs[Seq[Double]](0))
+val corpus_of_euclidean_norm = indexedWithHash.select("euclidean_norm").collect().map(row => row.getAs[Double](0))
+
+// cosine_similarity will be called for every document
+val cosine_similarity = udf[Seq[Double], Seq[Double], Double]((documentTfidfVector: Seq[Double], documentEuclidianNorm: Double) => {
+	def dotProduct(vector1: Seq[Double], vector2: Seq[Double]): Double = {
+		// (0 to (vector1.size() - 1)).map((i: Int) => vector1(i) * vector2(i)).sum
+		(vector1 zip vector2).map{(pair: (Double, Double)) => pair._1 * pair._2 }.sum
+	}
+
+	(corpus_of_euclidean_norm zip corpus_of_title_tfidf).map{ pair =>
+	  val tfidfVector = pair._2
+	  val euclidianNorm = pair._1
+	  dotProduct(documentTfidfVector, tfidfVector) / (euclidianNorm * documentEuclidianNorm)
+	}
+
+	// (0 to corpus_of_euclidean_norm.length).map { i =>
+	//   val tfidfVector = corpus_of_title_tfidf(i)
+	//   val euclidianNorm = corpus_of_euclidean_norm(i)
+	  
+	//   dotProduct(documentTfidfVector, tfidfVector) / (euclidianNorm * documentEuclidianNorm)
+	// }
+})
+
+val newDataframe = (indexedWithHash
+	.withColumn("cosine_similarity", cosine_similarity($"title_tfidf", $"euclidean_norm")))
+
+newDataframe.show(10)
 
 
 // readup
@@ -180,9 +216,10 @@ val indexedWithHash = (indexed
 
 // indexedWithHash.show(10)
 
-val adder = udf[Double, Array[Double]]((array_double: Array[Double]) => array_double.sum)
+// val adder = udf[Double, Seq[Double]]((array_double: Seq[Double]) => array_double.sum)
 
-indexedWithHash.withColumn("sum_of_title", adder($"title_tfidf")).show(10)
+// indexedWithHash.withColumn("sum_of_title", adder($"title_tfidf")).show(10)
+
 
 // tf.show(10)
 

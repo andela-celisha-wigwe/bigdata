@@ -89,3 +89,90 @@ J(C0, C1, C2, C3, h) = 1/2m * sum((y - h'(x1, x2, x3)) ^ 2))
 Clustered - we know th epossible clusteres
 unclusters, we dont know the possible clusters, but we know just the similarities betwenn each one
 	- e.g recommendation, classifying news, 
+
+
+
+
+Cosine Similary
+# Cosine similarity
+
+## Cosine between two vectors
+
+The cosine between two non-zero (important!!) vectors is:
+
+a . b = |a|2 |b|2 cos(t)
+
+t => Angle between a and b
+
+## Similarity of two vectors
+
+[1, 2, 3, 4, 5]
+[2, 3, 5, 7, 11]
+
+[28, 56, ]
+
+cos(t) = (A . B) / (|A| |B|) = Similarity!
+
+|A| => Euclidean norm => sqrt(x1^2, x2^2... xn^2) => escalar
+
+Similarity will be a number in [0, 1]. The closer to zero, the more different the 
+two vectors are and the closer to 1, the more similar they are.
+
+Because td-idf can't have negative numbers, the result can't be negative.
+
+## Expressing all this in data
+
+Suppose that we have a dataset with a feature of type Array[Double], being all 
+of the values positive numbers (td-idf like vectors). We only care about the 
+td-idf vectors.
+
+We want to add to each row in the dataset a new vector of type Array[Double], 
+with all the values in the range [0,1]. Each element in this vector maps with 
+one element in the dataset and express the distance between the current document
+and the one in that index. Note that in the index that represents the document 
+itself, the value will be 1.
+
+    Second
+    document
+       ^
+       |
+[1.0, 0.9, 0.8]
+   ^        ^
+   |        |
+First       Third
+Document    document
+
+[0.0, 0.8, 0.9, 1.0, 0.8, 0.4]
+
+
+
+// configure google compute because of memory.
+// test the application, by looking for documents and posts that are close together. Based on the results of the cosine similarities, we compare the real documents, and check if they are talking about the same thing.
+
+
+
+
+
+val corpus_of_title_tfidf = indexedWithHash.select("title_tfidf")
+  .collect { case a: Seq[Double] => a }.map(d => d(0))
+val corpus_of_euclidean_norm = indexedWithHash.select("euclidean_norm")
+  .collect { case v: Double => v }.map(d => d(0))
+
+// cosine_similarity will be called for every document
+val cosine_similarity = udf[Seq[Double], Seq[Double], Double]((documentTfidfVector: Seq[Double], documentEuclidianNorm: Double) => {
+	def dotProduct(vector1: Seq[Double], vector2: Seq[Double]): Double = {
+	  (vector1 zip vector2).map { (pair: (Double, Double)) =>
+	    pair._1 * pair. _2
+	  }.sum
+	}
+
+  (corpus_of_euclidean_norm zip corpus_of_title_tfidf).map { pair =>
+	  val tfidfVector = pair._2
+	  val euclidianNorm = pair._1
+	  
+	  dotProduct(documentTfidfVector, tfidfVector) / (euclidianNorm * documentEuclidianNorm)
+	}
+})
+
+val newDataframe = (indexedWithTfidf
+  .withColumn("cosine_similarity", cosine_similarity($"title_tfidf", $"euclidian_norm")))

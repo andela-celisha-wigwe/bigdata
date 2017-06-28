@@ -6,7 +6,7 @@ import scala.math.{log, sqrt}
 
 import org.apache.spark.sql.SQLContext
 import org.apache.spark.sql.Row
-import org.apache.spark.sql.functions.{count, lit, desc, sum, unix_timestamp, lower}
+import org.apache.spark.sql.functions.{count, lit, desc, sum, unix_timestamp, lower, size}
 import org.apache.spark.sql.DataFrame
 import org.apache.spark.ml.feature.StringIndexer
 
@@ -90,10 +90,46 @@ val data  = (sqlContext.jsonFile("/Users/elchroy/Roy/Code/bigdata/spiders/data.j
 	.withColumn("my_author_index", getAuthorIndex($"author"))
 ).cache()
 
-val pipeline = new Pipeline().setStages(Array(authorIndexer, postURLIndexer, post_content_tokenizer, post_content_stop_words_remover, post_content_ngrammer, title_tokenizer, title_stop_words_remover, title_ngrammer))
-val indexed = pipeline.fit(data).transform(data).cache()
+val my_concat = udf[Seq[String], Seq[String], Seq[String]]((vector1: Seq[String], vector2: Seq[String]) => vector1 ++ vector2)
 
-// indexed.show()
+val pipeline = new Pipeline().setStages(Array(authorIndexer, postURLIndexer, post_content_tokenizer, post_content_stop_words_remover, post_content_ngrammer, title_tokenizer, title_stop_words_remover, title_ngrammer))
+val indexed = (pipeline.
+	fit(data).
+	transform(data)
+	.withColumn("important_keywords", my_concat($"title_keywords", $"post_content_keywords"))
+	.cache())
+
+	val keywords_corpus = (indexed
+		.select("important_keywords")
+		.collect()
+		.map{row => row.getAs[Seq[String]] (0)}
+	)
+
+	// var unique_keyword_set = Set.empty[String]
+	var unique_keyword_set = Map.empty[String, Double]
+
+	keywords_corpus.foreach((document) => {
+		// document.toSeq.foreach(word => unique_keyword_set += word.toString())
+		document.toSeq.map(word => unique_keyword_set += (word -> 0))
+	})
+
+	unique_keyword_set.toSeq.foreach((kv_pair) => {
+		val word = kv_pair._1
+		val df = keywords_corpus.filter(_.contains(word)).length
+		// unique_keyword_set = unique_keyword_set.set(word, log((keywords_corpus.length) / (df + 1)))
+		unique_keyword_set += (word -> log((keywords_corpus.length) / (df + 1))) // plus 1 => if df is 0, we'll get an error.
+	})
+
+	val keywords_tfidfVector = udf[Seq[Double], Seq[String]]((document: Seq[String]) => {
+		unique_keyword_set.map{ kv_pair => 
+			val word = kv_pair._1
+			if (document.contains(word)) {
+				val idf = unique_keyword_set(word) // the document inverse-frequence int hen keywords_corpus
+				val tf = document.filter(_ == word).length // the number of occurences of the word in the document.
+				idf * tf
+			} else 0
+		}.toSeq
+	})
 
 	// val post_content_corpus = (indexed
 	// 	.select("post_content_keywords")
@@ -129,34 +165,34 @@ val indexed = pipeline.fit(data).transform(data).cache()
 	// })
 
 
-val title_corpus = (indexed
-	.select("title_keywords")
-	.collect()
-	.map{row => row.getAs[Seq[String]](0)}
-)
+// val title_corpus = (indexed
+// 	.select("title_keywords")
+// 	.collect()
+// 	.map{row => row.getAs[Seq[String]](0)}
+// )
 
-var unique_title_set = Map.empty[String, Double]
+// var unique_title_set = Map.empty[String, Double]
 
-title_corpus.foreach( document => {
-	document.toSeq.map(word => unique_title_set += (word -> 0))
-})
+// title_corpus.foreach( document => {
+// 	document.toSeq.map(word => unique_title_set += (word -> 0))
+// })
 
-unique_title_set.toSeq.foreach(kv_pair => {
-	val word = kv_pair._1
-	var df = title_corpus.filter(_.contains(word)).length
-	unique_title_set += (word -> log( (title_corpus.length) / (df + 1) ))
-})
+// unique_title_set.toSeq.foreach(kv_pair => {
+// 	val word = kv_pair._1
+// 	var df = title_corpus.filter(_.contains(word)).length
+// 	unique_title_set += (word -> log( (title_corpus.length) / (df + 1) ))
+// })
 
-val title_tfidfVector = udf[Seq[Double], Seq[String]]( (document: Seq[String]) => {
-	unique_title_set.map{ kv_pair => 
-		val word = kv_pair._1
-		if(document.contains(word)){
-			var idf = unique_title_set(word)
-			var tf = document.filter(_ == word).length
-			idf * tf
-		} else 0
-	}.toSeq
-})
+// val title_tfidfVector = udf[Seq[Double], Seq[String]]( (document: Seq[String]) => {
+// 	unique_title_set.map{ kv_pair => 
+// 		val word = kv_pair._1
+// 		if(document.contains(word)){
+// 			var idf = unique_title_set(word)
+// 			var tf = document.filter(_ == word).length
+// 			idf * tf
+// 		} else 0
+// 	}.toSeq
+// })
 
 
 
@@ -174,13 +210,23 @@ val euclidean_norm = udf[Double, Seq[Double]]((tf_idf: Seq[Double]) => {
 
 val indexedWithHash = (indexed
 	// .withColumn("post_content_hash", getHashingTrick($"post_content_keywords"))
+	
 	// .withColumn("post_content_tfidf", post_content_tfidfVector($"post_content_keywords"))
-	.withColumn("title_tfidf", title_tfidfVector($"title_keywords"))
-	.withColumn("euclidean_norm", euclidean_norm($"title_tfidf"))
+	// .withColumn("post_content_euclidean_norm", euclidean_norm($"post_content_tfidf"))
+	
+	// .withColumn("title_tfidf", title_tfidfVector($"title_keywords"))
+	// .withColumn("title_euclidean_norm", euclidean_norm($"title_tfidf"))
+
+	.withColumn("keywords_tfidf", keywords_tfidfVector($"important_keywords"))
+	.withColumn("keywords_euclidean_norm", euclidean_norm($"keywords_tfidf"))
+
 ).cache()
 
-val corpus_of_title_tfidf = indexedWithHash.select("title_tfidf").collect().map(row => row.getAs[Seq[Double]](0))
-val corpus_of_euclidean_norm = indexedWithHash.select("euclidean_norm").collect().map(row => row.getAs[Double](0))
+val corpus_of_keywords_tfidf = indexedWithHash.select("keywords_tfidf").collect().map(row => row.getAs[Seq[Double]](0))
+val corpus_of_keywords_euclidean_norm = indexedWithHash.select("keywords_euclidean_norm").collect().map(row => row.getAs[Double](0))
+
+// val corpus_of_post_content_tfidf = indexedWithHash.select("post_content_tfidf").collect().map(row => row.getAs[Seq[Double]](0))
+// val corpus_of_post_content_euclidean_norm = indexedWithHash.select("post_content_euclidean_norm").collect().map(row => row.getAs[Double](0))
 
 // cosine_similarity will be called for every document
 val cosine_similarity = udf[Seq[Double], Seq[Double], Double]((documentTfidfVector: Seq[Double], documentEuclidianNorm: Double) => {
@@ -189,22 +235,58 @@ val cosine_similarity = udf[Seq[Double], Seq[Double], Double]((documentTfidfVect
 		(vector1 zip vector2).map{(pair: (Double, Double)) => pair._1 * pair._2 }.sum
 	}
 
-	(corpus_of_euclidean_norm zip corpus_of_title_tfidf).map{ pair =>
+	(corpus_of_keywords_euclidean_norm zip corpus_of_keywords_tfidf).map{ pair =>
 	  val tfidfVector = pair._2
 	  val euclidianNorm = pair._1
 	  dotProduct(documentTfidfVector, tfidfVector) / (euclidianNorm * documentEuclidianNorm)
 	}
 
-	// (0 to corpus_of_euclidean_norm.length).map { i =>
-	//   val tfidfVector = corpus_of_title_tfidf(i)
-	//   val euclidianNorm = corpus_of_euclidean_norm(i)
+	// (0 to euclidean_norm_corpus.length).map { i =>
+	//   val tfidfVector = tf_idf_corpus(i)
+	//   val euclidianNorm = euclidean_norm_corpus(i)
 	  
 	//   dotProduct(documentTfidfVector, tfidfVector) / (euclidianNorm * documentEuclidianNorm)
 	// }
 })
 
-val newDataframe = (indexedWithHash
-	.withColumn("cosine_similarity", cosine_similarity($"title_tfidf", $"euclidean_norm")))
+// val post_with_max_cosine = udf[Seq[String], Seq[Double]]((cosine_sim_seq: Seq[Double]) => {
+// 	val index_with_max = (cosine_sim_seq zip (0 to cosine_sim_seq.length)).maxBy(_._1)._2
+// 	keywords_corpus(index_with_max)
+// })
+
+// val experiUDF = udf[Seq[String], Seq[Double]]( (cosine_seq: Seq[Double]) => {
+// 	val index_with_max = ((0 to cosine_seq.filter(_<0.9999).length) zip cosine_seq.filter(_<0.9999)).maxBy(_._2)._1
+// 	keywords_corpus(index_with_max)
+// })
+
+val experiUDF = udf[Seq[String], Seq[Double]]( (cosine_seq: Seq[Double]) => { keywords_corpus(((0 to cosine_seq.filter(_<0.9999).length) zip cosine_seq.filter(_<0.9999)).maxBy(_._2)._1) } )
+
+val removeNaN = udf[Seq[Double], Seq[Double]]((doc) => {
+	doc.map((d: Double) => {
+		if (d.isNaN || d > 0.99) {
+			0.0
+		} else {
+			d
+		}
+	})
+})
+
+val dfWithCosine = (indexedWithHash
+	.withColumn("keywords_cosine_similarity", cosine_similarity($"keywords_tfidf", $"keywords_euclidean_norm"))
+	.withColumn("keywords_cosine_similarity_without_nan", removeNaN($"keywords_cosine_similarity"))
+).cache()
+
+// val dfWithoutNaN = dfWithCosine.select($"keywords_cosine_similarity").collect().foreach((doc) => {
+// 	doc.getAs[Seq[Double]](0).map((d: Double) => {if (d.isNaN) 0.0 else d});
+// })
+
+// val newDataframe = (dfWithCosine
+// 	// .filter(size($"keywords_cosine_similarity") > 0)
+// 	.withColumn("closest_post_content", experiUDF($"keywords_cosine_similarity"))
+// 	// .withColumn("post_content_cosine_similarity", cosine_similarity($"post_content_tfidf", $"post_content_euclidean_norm", corpus_of_post_content_euclidean_norm, corpus_of_post_content_tfidf))
+// ).cache()
+
+val newDataframe = dfWithCosine.withColumn("experiment", experiUDF($"keywords_cosine_similarity_without_nan")).cache()
 
 newDataframe.show(10)
 
@@ -248,4 +330,9 @@ newDataframe.show(10)
 
 
 
+// K-Means Clustering
+// https://en.wikipedia.org/wiki/K-means_clustering#Algorithms
+// https://spark.apache.org/docs/latest/mllib-clustering.html#k-means
+
+// try to remove the column with 0.99999 and make an attmept again.
 

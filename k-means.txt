@@ -1,0 +1,75 @@
+# K-means algorithm
+
+We have a group of observations called o1 ... om. Every one is an x-sized vector
+of real numbers. We aim to partition the observations into a set of clusters of 
+size k (an arbitrary number set at the beginning). We should partition the 
+solution so that the internal sum of squares of every cluster is minimal.
+
+We do this by having an initial set of clusters of means.
+
+And then repeat until convergion:
+
+- Assign every observation in the cluster whose mean yields with-in the sum
+of squares.
+- Recalculate the means of the clusters.
+
+## Problems
+
+This is an NP-hard algorithm!!!
+
+
+
+# Algorithm for K-means
+
+```
+points = set_of_points() # This will be an array of vectors of doubles
+# It represents the initial corpus of vectors that we want to cluster
+
+k = 10 # Arbitrary number of clusters
+
+# Create the clusters with only one point that will be chosen randomly
+clusters = [[random.choise(points)] for i in range(k)]
+
+tolerance = 0.04
+
+while True:
+  for p in points:
+    # Find the cluster that is closer to point
+    previous_clusters = clusters[:]
+    smallest_distance = getDistance(p, getCentroid(clusters[0]))
+    cluster_index = 0
+    for i in range(len(clusters) - 1):
+      distance = getDistance(p, getCentroid(clusters[i+1])
+      if distance < smallest_distance:
+        smallest_distance = distance
+        cluster_index = i
+    
+    # Add the point to the cluster
+    clusters[cluster_index].append(p)
+    
+  # Find the cluster with the biggest shift
+  # Shift is the difference between centroids after and before adding the new
+  # points
+  biggest_shift = 0.0
+  for i in range(len(clusters)):
+    shift = clusterShift(previous_clusters[i], clusters[i])
+    if shift > biggest_shift:
+      biggest_shift = shift
+  if biggest_shift > tolerance:
+    break
+    
+# This gets the euclidean distance of two vectors
+def getDistance(point, point2)
+
+# Gets a vector that is the centroid of a cluster
+# It will be calculated by taking the average of every position in the vectors
+def getCentroid(cluster):
+  unzipped = zip(*cluster) # This will create an array of tuples of form:
+  # [(x1, x2, ... xn), (y1, y2, ... yn), ...]
+  
+  centroid_coords = [ math.fsum(coordList) / len(unzipped[0]) for coordList in unzipped ]
+
+# cluster shift
+def clusterShift(cluster1, cluster2):
+  return getDistance(getCentroid(cluster1), getCentroid(cluster2))
+```

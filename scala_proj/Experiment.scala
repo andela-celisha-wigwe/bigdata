@@ -56,7 +56,15 @@ val countBlackListAuthors = udf[Boolean, String]((content: String) => (
 	blacklistAuthors.contains(content)
 ))
 
-val newDF = mergedDF.filter("comment_content is not null").select("author", "comment_content", "spam").withColumn("blacklist_count", countBlackList($"comment_content")).withColumn("is_anonymous", countBlackListAuthors($"author")).withColumn("num_of_links", countHttp($"comment_content")).groupBy($"comment_content", $"author", $"spam", $"is_anonymous", $"num_of_links", $"blacklist_count").agg(count(lit(1)).as("count"))
+val newDF = (mergedDF
+	.filter("comment_content is not null")
+	.select("author", "comment_content", "spam")
+	.withColumn("blacklist_count", countBlackList($"comment_content"))
+	.withColumn("is_anonymous", countBlackListAuthors($"author"))
+	.withColumn("num_of_links", countHttp($"comment_content"))
+	.groupBy($"comment_content", $"author", $"spam", $"is_anonymous", $"num_of_links", $"blacklist_count")
+	.agg(count(lit(1)).as("count"))
+)
 
 val sortedDF = newDF.sort(desc("num_of_links"), desc("count"), desc("blacklist_count")).cache() // cache he
 // 
@@ -76,6 +84,9 @@ val (blacklistCountMin, blacklistCountMax) = sortedDF.agg(min($"blacklist_count"
 // val normalize = udf[Double, Int, Int, Int]((value: Int, min: Int, max: Int) => {
 // 	(value - min) / (max - min)
 // })
+
+// Some feature scaling in done here.
+// also mean normalization can be used here, with a mean parameter referring to the avearge of the training vector.
 
 val normalizeNumLinks = udf[Double, Int]((value: Int) => {
 	(value - numOfLinksMin) / (numOfLinksMax - numOfLinksMin).toDouble

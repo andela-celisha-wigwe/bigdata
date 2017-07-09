@@ -2,7 +2,12 @@ import org.apache.spark.mllib.feature.{HashingTF, IDF}
 import org.apache.spark.mllib.linalg.Vector
 import org.apache.spark.rdd.RDD
 
+// import scala.util.control.Breaks._
+import scala.util.control._
+
 import scala.math.{log, sqrt}
+import scala.util.{Random}
+import scala.collection.JavaConversions._
 
 import org.apache.spark.sql.SQLContext
 import org.apache.spark.sql.Row
@@ -82,20 +87,20 @@ val title_ngrammer = (new NGram()
 	.setOutputCol("title_ngrams")
 	.setN(2))
 
-val data  = (sqlContext.jsonFile("/Users/elchroy/Roy/Code/bigdata/spiders/data.json")
-	.filter("author is not null")
+val data  = (sqlContext.jsonFile("/Users/elchroy/Roy/Code/bigdata/spiders/data_uncomplete_cleaned_inline.json")
+	// .filter("_corrupt_record is null and author is not null")
 	.drop($"_corrupt_record")
 	// .withColumn("ts", dateToTS)
 	.withColumn("author", lower($"author"))
-	.withColumn("my_author_index", getAuthorIndex($"author"))
+	// .withColumn("my_author_index", getAuthorIndex($"author"))
 ).cache()
 
 val my_concat = udf[Seq[String], Seq[String], Seq[String]]((vector1: Seq[String], vector2: Seq[String]) => vector1 ++ vector2)
 
 val pipeline = new Pipeline().setStages(Array(authorIndexer, postURLIndexer, post_content_tokenizer, post_content_stop_words_remover, post_content_ngrammer, title_tokenizer, title_stop_words_remover, title_ngrammer))
-val indexed = (pipeline.
-	fit(data).
-	transform(data)
+val indexed = (pipeline
+	.fit(data)
+	.transform(data)
 	.withColumn("important_keywords", my_concat($"title_keywords", $"post_content_keywords"))
 	.cache())
 
@@ -335,4 +340,95 @@ newDataframe.show(10)
 // https://spark.apache.org/docs/latest/mllib-clustering.html#k-means
 
 // try to remove the column with 0.99999 and make an attmept again.
+
+
+
+
+// Implementing K-Means Algorithm
+
+// val k = 10
+// val points = newDataframe.select($"keywords_cosine_similarity_without_nan").collect().map(_.getList[Double](0))
+// val tolerance = 0.04
+// val clusters = (0 to k).map(n => Random.shuffle(points.toList).head)
+
+// while (true) {
+// 	points.foreach((p) => {
+// 		val prevClusters = clusters
+// 		val smallestDistance = getDistance(p, getCentroid(clusters(0))) // todo
+// 		val clusterIndex = 0
+
+// 		(0 to (clusters.length - 1)).foreach((i:Int) => {
+// 			val distance = getDistance(p, getCentroid(clusters(i + 1)))
+// 			if (distance < smallestDistance) {
+// 				smallest_distance = distance
+// 				cluster_index = i
+// 			}
+// 		})
+// 		clusters(cluster_index + 1) = p
+// 	})
+
+// 	val biggestShift = 0.0
+// 	(0 to (clusters.length)).foreach((i:Int) => {
+// 		val shift clusterShift(prevClusters(i), clusters(i)) // todo
+// 		biggestShift = if (shift > biggest_shift) shift else biggestShift
+// 	})
+
+// 	if (biggestShift > tolerance) {
+// 		break // to explain
+// 	}
+
+// }
+
+def getDistance(point1: Seq[Double], point2: Seq[Double]) : Double = {
+	sqrt((point1 zip point2).map((d) => {
+		val v = d._1 - d._2
+		v * v
+	}).sum)
+}
+
+def getCentroid(point:List[Double]) : Double = {
+	point.sum / point.length
+}
+
+def clusterShift(cluster1:List[Double], cluster2:List[Double]) = {
+	getDistance(getCentroid(cluster1), getCentroid(cluster2))
+}
+
+
+val k = 10
+val points = (newDataframe
+  .select($"keywords_cosine_similarity_without_nan")
+  .collect()
+  .map(_.getList[Double](0))
+)
+val tolerance = 0.04
+var clusters = ((0 to k)
+	.map(n => Random.shuffle(points.toList).head)
+) // select 10 random array as the clusters from the points clusters.
+
+val loop = new Breaks;
+loop.breakable {
+  while (true) {
+  	points.foreach((p) => {
+  		val prevClusters = clusters
+  		val smallestDistanceIndex = ((clusters zip (0 to clusters.length))
+  		  // List of distances from centroid to point
+  		  .map(pair => (getDistance(p, getCentroid(pair._1)), pair._2))
+  		  .minBy(_._1)
+  		  ._2
+  		)
+  		clusters(smallestDistanceIndex) = p
+  	})
+  
+    val biggestShift = ((0 to (clusters.length))
+    	.map(clusterShift(prevClusters(_), clusters(_)))
+    	.max
+    )
+  
+  	if (biggestShift > tolerance) {
+  		loop.break // to explain
+  	}
+  }
+}
+
 
